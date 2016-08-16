@@ -67,4 +67,4 @@ also posted online at their [status page](https://airvpn.org/status/)
 * Test options for running on Windows
 
 
-[![Analytics](https://ga-beacon.appspot.com/UA-10006093-3/github/cjsheets/airvpn-utils?pixel)](https://github.com/cjsheets/airvpn-utils)
+[![Analytics](https://cjs-beacon.appspot.com/UA-10006093-3/github/cjsheets/airvpn-utils?pixel)](https://github.com/cjsheets/airvpn-utils)
