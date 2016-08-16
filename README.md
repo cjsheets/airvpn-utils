@@ -19,7 +19,7 @@ You need an [API key from AirVPN](https://airvpn.org/settings/) to use this scri
 
 Either create a file called api_key.py in the same directory as the airvpn script containing: `API_KEY = 'xxxyyyzzz'` or add your API key to the script `API_KEY = ''`.
 
-*Optional:* Copy the airvpn script into a PATH directory (like /usr/local/bin) so you can run it from any directory.
+*Optional:* Copy the airvpn script into a PATH directory (like /usr/local/bin) so you can run it from anywhere.
 
 ###Commands
 
@@ -67,4 +67,4 @@ also posted online at their [status page](https://airvpn.org/status/)
 * Test options for running on Windows
 
 
-[![Analytics](https://ga-beacon.appspot.com/UA-10006093-3/github/cjsheets/airvpn-utils?pixel)](https://github.com/cjsheets/airvpn-utils)
+[![Analytics](https://cjs-beacon.appspot.com/UA-10006093-3/github/cjsheets/airvpn-utils?pixel)](https://github.com/cjsheets/airvpn-utils)
