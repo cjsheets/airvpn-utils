@@ -1,0 +1,257 @@
+#!/usr/bin/env python
+#| 
+#|  AirVPN Utils
+#| 
+#| - Query AirVPN API from the command line
+#| - Intended to run from Linux CLI
+#| - License: MIT
+#| - URL: github.com/cjsheets/airvpn-utils
+#| 
+
+"""
+AirVPN Utils.
+
+Usage: 
+    airvpn user [-k] [<parameter>...]
+    airvpn sessions [-k] [<parameter>...]
+    airvpn status ( -c | -o | -p | -r | -s ) [<name>] 
+                  [-k] [<parameter>...]
+
+Options:
+    -k                  Output keys: <key> : <value>.
+    -c --countries      Status of network per country.
+    -o --continents     Status of network per continent.
+    -p --planets        Status of entire network.
+    -r --routing        Status of double-hop routing.
+    -s --servers        Status of all servers.
+    -h --help           Show this screen.
+    -v --version        Show version.
+"""
+
+API_KEY = ''
+
+ENABLE_STDOUT = False
+ENABLE_LOGFILE = False
+LOGFILE = '/var/log/airvpn/airvpn_utils.log'
+LOGLEVEL = 'Info'
+
+#| Test API calls with:
+#| https://airvpn.org/api/?format=web&key=<your_api_key>&service=<service_name>&<service_params>
+#| See: https://airvpn.org/faq/api/
+
+import json
+import logging
+
+from docopt import docopt
+import requests
+
+try:
+    import api_key
+    API_KEY = api_key.API_KEY
+    if API_KEY == '':
+        print '\n AirVPN Utils requires an API key \n'
+        exit(1)
+except ImportError:
+    if API_KEY == '':
+        print '\n AirVPN Utils requires an API key \n'
+        exit(1)
+
+
+#| json - Retrieves requested parameters of current AirVPN sessions
+def query_api(service_name, service_params=[]):
+    service_string = service_name
+    if service_params:
+        for param in service_params:
+            service_string += '&' + service_params
+
+    request_string = 'https://airvpn.org/api/?format=json&key=' + API_KEY + '&service=' + service_string
+    r = requests.get(request_string)
+
+    if r.status_code == 200:
+        try:
+            data = json.loads(r.text)
+        except ValueError:
+            logger.error('Submitted: ' + request_string)
+            logger.error('Server responded, no JSON object could be decoded')            
+            exit(1)
+
+        logger.info('Data recieved successfully')
+        logger.debug(json.dumps(r.json(), sort_keys=True, indent=4, separators=(',', ': ')))
+        return data
+    else:
+        logger.error('Submitted: ' + request_string)
+        logger.error('Unexpected return code: ' + r.status_code + ', cannot continue')
+        exit(1)
+
+
+#| 
+#|  Perform user-called command actions
+#| 
+
+def sessions(parameters, show_keys):
+    data = query_api('userinfo')
+    if parameters:
+        for session in data['sessions']:
+            if show_keys:
+                for parameter in parameters:
+                    print parameter + ' : ' + str(session[parameter])
+            else:
+                for parameter in parameters:
+                    print session[parameter]
+    else:
+        for session in data['sessions']:
+            if show_keys:
+                for key in session:
+                    print key + ' : ' + str(session[key])
+            else:
+                for key in session:
+                    print str(session[key])
+    exit(0)
+
+
+def status(parameters, area, name, show_keys):
+    if area == 'countries':
+        name_key = 'country_name'
+    elif area == 'continents' or area == 'planets' or \
+            area == 'routing' or area == 'servers':
+        name_key = 'public_name'
+    else:
+        logger.error('Area not recognized: ' + area)
+        exit(1)
+
+    data = query_api('status')
+    area_data = data[area]
+
+    if name:
+        for location in area_data:
+            if location[name_key] == name:
+                if parameters:
+                    if show_keys:
+                       for parameter in parameters:
+                            print parameter + ' : ' + str(location[parameter])
+                    else:
+                       for parameter in parameters:
+                            print location[parameter]
+                else:
+                    if show_keys:
+                        for key in location:
+                            print key + ' : ' + str(location[key])
+                    else:
+                        for key in location:
+                            print str(location[key])
+                logger.debug('Server found and displayed')
+                exit(0)
+        logger.error('Name: ' + name + ' not found in: ' + area)
+        exit(1)
+    # No area name given, need to itterate over every server
+    else:
+        for location in area_data:
+            if parameters:
+                if show_keys:
+                   for parameter in parameters:
+                        print parameter + ' : ' + str(location[parameter])
+                else:
+                   for parameter in parameters:
+                        print location[parameter]
+            else:
+                if show_keys:
+                    for key in location:
+                        print key + ' : ' + str(location[key])
+                else:
+                    for key in location:
+                        print str(location[key])
+    exit(0)
+
+
+def user(parameters, show_keys):
+    data = query_api('userinfo')
+    if parameters:
+        if show_keys:
+            for parameter in parameters:
+                print parameter + ' : ' + str(data['user'][parameter])
+        else:
+            for parameter in parameters:
+                print data['user'][parameter]
+    else:
+        if show_keys:
+            for key in data['user']:
+                print key + ' : ' + str(data['user'][key])
+        else:
+            for key in data['user']:
+                print str(data['user'][key])
+    exit(0)
+
+
+#| 
+#|  Parse Command Line Options
+#| 
+
+def main(opts):
+    if opts['sessions']:
+        logger.info('Performing query for active sessions')
+        sessions(opts['<parameter>'], opts['-k'])
+
+    if opts['status']:
+        if opts['--countries']:
+            logger.info('Performing query for status information')
+            status(opts['<parameter>'], 'countries', opts['<name>'], opts['-k'])
+        elif opts['--continents']:
+            logger.info('Performing query for status information')
+            status(opts['<parameter>'], 'continents', opts['<name>'], opts['-k'])
+        elif opts['--planets']:
+            logger.info('Performing query for status information')
+            status(opts['<parameter>'], 'planets', opts['<name>'], opts['-k'])
+        elif opts['--routing']:
+            logger.info('Performing query for status information')
+            status(opts['<parameter>'], 'routing', opts['<name>'], opts['-k'])
+        elif opts['--servers']:
+            logger.info('Performing query for status information')
+            status(opts['<parameter>'], 'servers', opts['<name>'], opts['-k'])
+
+    if opts['user']:
+        logger.info('Performing query for user information')
+        user(opts['<parameter>'], opts['-k'])
+
+
+#| 
+#|  Suport Functions
+#| 
+
+#| obj - Convert defined logging level to statement
+def log_level(level):
+    return {
+        'DEBUG' : logging.DEBUG,
+        'INFO' : logging.INFO,
+        'WARNING' : logging.WARNING,
+        'ERROR' : logging.ERROR,
+        'CRITICAL' : logging.CRITICAL,
+    }.get(level, logging.INFO)
+
+
+#| Initialize stdout and log file if enabled
+def init_logging():
+    global logger
+    if LOGLEVEL == 'DEBUG':
+        logging_formatter = logging.Formatter('[%(asctime)s] [%(name)s] [%(levelname)s] %(message)s')
+    else:
+        logging_formatter = logging.Formatter('[%(asctime)s] AirVPN Utils - %(message)s')
+
+    stream_handler = logging.StreamHandler()
+    stream_handler.setFormatter(logging_formatter)
+    file_handler = logging.FileHandler(LOGFILE)
+    file_handler.setFormatter(logging_formatter)
+    logger = logging.getLogger(__name__)
+
+    if ENABLE_STDOUT:
+        logger.addHandler(stream_handler)
+
+    if ENABLE_LOGFILE:
+        logger.addHandler(file_handler)
+
+    logger.setLevel(log_level(LOGLEVEL))
+
+
+if __name__ == '__main__':
+    init_logging()
+    opts = docopt(__doc__, version='AirVPN Utils v0.1.0')
+    main(opts)
