@@ -6,8 +6,12 @@ This script is useful for querying the [AirVPN](https://airvpn.org/) API from th
 
 ####Prerequisites
 
+The following python packages are required:
+
 * docopt
 * requests
+
+To install, run `pip install -r requirements.txt`
 
 ####Setup
 
