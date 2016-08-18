@@ -1,6 +1,6 @@
 # AirVPN Utils
 
-This script is useful for querying the [AirVPN](https://airvpn.org/) API from the command line.
+This script is useful for querying the [AirVPN API](https://airvpn.org/) from the command line.
 
 ###Install
 
